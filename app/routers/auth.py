@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from auth.jwt_token import Token
 from backend.session import get_db
 from backend.hashing import Hash
+from exceptions.user import UserNotFound
+from exceptions.auth import InvalidPassword
 from schemas import auth
 from managers import user
 
@@ -29,12 +31,8 @@ def login(
     manager = user.UserManager(session)
     searched_user = manager.get_user_by_email(request.username)
     if searched_user is None:
-        raise exceptions.HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise UserNotFound
     if not Hash.verify(request.password, searched_user.password):
-        raise exceptions.HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Password is incorrect"
-        )
+        raise InvalidPassword
     access_token = Token.create_access_token(data={"sub": searched_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
